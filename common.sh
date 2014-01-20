@@ -1,8 +1,7 @@
 #
-# This file is used by rackspace personnel, and can be safely removed.
+# This file can be safely removed.
 #
 # This is a work in progress, and may include bugs.  Use at your own risk.
-# aaron segura x501-5895 
 #
 ### Common Variables
 HOST=`hostname | cut -d. -f1`
