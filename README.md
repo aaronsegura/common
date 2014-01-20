@@ -12,6 +12,7 @@ sshwrapper.sh
 Wrapper for Cacti SSH connections.
 
 .ssh/authorized_keys:
-command="/usr/local/bin/sshwrapper.sh" <key> user@host
+
+    command="/usr/local/bin/sshwrapper.sh" <key> user@host
 
 
