@@ -10,7 +10,7 @@ class BTCGuildError(Exception):
 
 def parseArgs():
 
-  parser = argparse.ArgumentParser(description="Tool to pull cacti stats out of ASICMiner Blades (v2)")
+  parser = argparse.ArgumentParser(description="Tool to pull cacti stats out of BTCGuild.com")
   parser.add_argument("--apikey",  metavar="<key", help="Your API Key from BTC Guild", required=True)
   parser.add_argument("--items", metavar="<xx,xx,..>", help="List of items, comma separated", required=True)
 
@@ -32,8 +32,8 @@ def getInfo(apikey, timeout=0.75):
 
 def sumWorkerField(workers, fieldName):
   sum = 0
-  for worker in workers.keys():
-    sum += workers[worker][fieldName]
+  for worker in workers.itervalues():
+    sum += worker[fieldName]
   return sum
 
 def main():
