@@ -33,6 +33,20 @@ class MiCasaVerde():
       for key in dev.keys():
         self.devices[devid][key] = dev[key]
 
+      if self.devices[devid]["category"] == 5:
+        if self.devices[devid]["hvacstate"] == "Heating":
+          self.devices[devid]["heating"] = 1
+          self.devices[devid]["cooling"] = 0
+  
+        if self.devices[devid]["hvacstate"] == "Cooling":
+          self.devices[devid]["heating"] = 0
+          self.devices[devid]["cooling"] = 1
+  
+        if self.devices[devid]["hvacstate"] == "Idle":
+          self.devices[devid]["heating"] = 0
+          self.devices[devid]["cooling"] = 0
+
+    return
 
   def query(self, queryid, addArgs=None):
     result = None
@@ -75,13 +89,14 @@ def main():
     2:  { "lv": "level"   },        # Dimmable Light
     3:  { "st": "status"  },        # Switch
     4:  { "bt": "batterylevel",     # Sensor
-            "tp": "temperature",
-            "lt": "light",
-            "tr": "tripped" },
-    5:  { "st": "status",           # Thermostat
-            "hs": "heatsp",
-            "cs": "coolsp",
-            "tp": "temperature"}
+          "tp": "temperature",
+          "lt": "light",
+          "tr": "tripped" },
+    5:  { "ht": "heating",          # Thermostat
+          "cl": "cooling",
+          "hs": "heatsp",
+          "cs": "coolsp",
+          "tp": "temperature"}
   }
 
   pad = ''
