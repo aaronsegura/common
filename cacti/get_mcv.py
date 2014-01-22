@@ -1,8 +1,6 @@
 #!/usr/bin/python
 
-import requests, argparse, json, sys, pprint
-
-pp = pprint.PrettyPrinter()
+import requests, argparse, json, sys
 
 class MCVError(Exception):
   def __init__(self, value):
