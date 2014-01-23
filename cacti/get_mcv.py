@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import requests, argparse, json, sys
+import requests, argparse, json, sys, time
 
 class MCVError(Exception):
   def __init__(self, value):
@@ -9,11 +9,12 @@ class MCVError(Exception):
     return self.msg
 
 class MiCasaVerde():
-  def __init__(self, host, port):
+  def __init__(self, host, port, sensorTripTimeout=None):
     self.status = None
     self.sdata = None
     self.host = host
     self.port = port
+    self.tripTimeout = sensorTripTimeout
     self.devices = {}
     self.updateStatus()
 
@@ -33,18 +34,29 @@ class MiCasaVerde():
       for key in dev.keys():
         self.devices[devid][key] = dev[key]
 
+      # Handle Thermostat Special Variables
       if self.devices[devid]["category"] == 5:
         if self.devices[devid]["hvacstate"] == "Heating":
           self.devices[devid]["heating"] = 1
           self.devices[devid]["cooling"] = 0
-  
+
         if self.devices[devid]["hvacstate"] == "Cooling":
           self.devices[devid]["heating"] = 0
           self.devices[devid]["cooling"] = 1
-  
+
         if self.devices[devid]["hvacstate"] == "Idle":
           self.devices[devid]["heating"] = 0
           self.devices[devid]["cooling"] = 0
+
+      # Handle Contact Sensor Special Variables
+      if self.devices[devid]["category"] == 4:
+        if self.tripTimeout:
+          now = int(time.time())
+          try:
+            if self.devices[devid]["lasttrip"] > (now - self.tripTimeout):
+              self.devices[devid]["tripped"] = 1
+          except (KeyError, ValueError):
+            pass
 
     return
 
@@ -70,6 +82,7 @@ def parseArgs():
   parser.add_argument("--host",  metavar="<address>", help="The IP Address of your MiCasaVerde controller", required=True)
   parser.add_argument("--port",  metavar="<port>", help="The port of the API.  [default=3480]", default=3480)
   parser.add_argument("--id",    type=int, metavar="<id>", help="MiCasaVerde Device ID", required=True)
+  parser.add_argument("--freq",  type=int, metavar="<Poller Freq>", help="Cacti Poller Interval, in seconds. [Default=60]", default=60)
   parser.add_argument("--items", metavar="<xx,xx,..>", help="List of items, comma separated", required=True)
 
   return parser.parse_args()
@@ -80,7 +93,7 @@ def main():
   args = parseArgs()
 
   try:
-    MCV = MiCasaVerde(args.host, args.port)
+    MCV = MiCasaVerde(args.host, args.port, sensorTripTimeout=args.freq)
   except MCVError, err:
     print "%s" % err.msg
     return
