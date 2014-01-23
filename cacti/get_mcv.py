@@ -53,6 +53,7 @@ class MiCasaVerde():
         if self.tripTimeout:
           now = int(time.time())
           try:
+            self.devices[devid]["lasttrip"] = int(self.devices[devid]["lasttrip"])
             if self.devices[devid]["lasttrip"] > (now - self.tripTimeout):
               self.devices[devid]["tripped"] = 1
           except (KeyError, ValueError):
