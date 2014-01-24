@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import requests, argparse, json, sys
+import requests, argparse, json, sys, time, os
 
 class BTCGuildError(Exception):
   def __init__(self, value):
@@ -30,6 +30,46 @@ def getInfo(apikey, timeout=0.75):
 
   return result
 
+def magic(apikey):
+  magicfile = "/tmp/.get_btcguild.txt"
+  r = False
+
+  try:
+    s = os.stat(magicfile)
+  except OSError:
+    pass
+  else:
+    now = int(time.time())
+    if (now - s.st_ctime) > 30:
+      try:
+        os.unlink(magicfile)
+      except OSError, err:
+        print "Unable to delete stale cache file $s: %s" % ( magicfile, err.message)
+
+  try:
+    with open(magicfile, "r") as fp:
+      r = fp.read()
+  except IOError:
+    try:
+      with open(magicfile, "w+") as fp:
+        try:
+          r = getInfo(apikey).content
+        except (BTCGuildError, KeyError, ValueError):
+          raise
+        else:
+          print "Writing File: %s" % r
+          fp.write(r)
+    except IOError:
+      pass
+    else:
+      time.sleep(15)
+      try:
+        os.unlink(magicfile) # *poof!*
+      except OSError:
+        pass
+
+  return r
+
 def sumWorkerField(workers, fieldName):
   sum = 0
   for worker in workers.itervalues():
@@ -38,17 +78,16 @@ def sumWorkerField(workers, fieldName):
 
 def main():
 
-  userInfo  = None
+  BTCInfo   = None
   args      = parseArgs()
 
   try:
-    userInfo = getInfo(args.apikey)
-  except BTCGuildError, err:
-    print "Error Getting Info: %s" % err.msg
-    return False
+    BTCInfo = magic(args.apikey)
+  except BTCGuildError:
+      print "Error of some damn kindL %s" % err.msg
 
   try:
-    u = json.loads(userInfo.content)
+    u = json.loads(BTCInfo)
   except (ValueError, TypeError), err:
     print "Error interpreting result: %s" % err.message
     return False
