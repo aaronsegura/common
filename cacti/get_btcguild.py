@@ -83,8 +83,8 @@ def main():
 
   try:
     BTCInfo = magic(args.apikey)
-  except BTCGuildError:
-      print "Error of some damn kindL %s" % err.msg
+  except BTCGuildError, err:
+      print "Error of some damn kind %s" % err.msg
 
   try:
     u = json.loads(BTCInfo)
