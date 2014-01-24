@@ -57,16 +57,15 @@ def magic(apikey):
         except (BTCGuildError, KeyError, ValueError):
           raise
         else:
-          print "Writing File: %s" % r
           fp.write(r)
     except IOError:
       pass
-    else:
-      time.sleep(15)
-      try:
-        os.unlink(magicfile) # *poof!*
-      except OSError:
-        pass
+    #else:
+      #time.sleep(15)
+      #try:
+        #os.unlink(magicfile) # *poof!*
+      #except OSError:
+        #pass
 
   return r
 
