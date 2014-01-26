@@ -15,7 +15,7 @@ Wrapper for Cacti SSH connections.  Prevents the remote cacti user from performi
 
 http://www.percona.com/software/percona-monitoring-plugins
 
-get_mcv.py
+micasaverde/get_mcv.py
 ----------------
 Cacti script to get your Vera(lite) hooked up to the graphing machines!
 
@@ -48,11 +48,11 @@ Provides the following graphs:
 * Contact Sensor: Tripped/Armed status
 
 
-get_btcguild.py
+btcguild/get_btcguild.py
 ---------------------
 Cacti script to get your BTC's hooked up to the graphing machines!
 
-* For use with the cacti_host_template_btcguild* files in the templates/ directory
+* For use with the cacti_host_template_btcguild* files in the btcguild/templates/ directory
 * You will need to supply your BTCGuild API Key when you create graphs, available here: https://www.btcguild.com/index.php?page=account
 
 Copy the script to your cacti/scripts/ directory and make it executable, then import the templates via the cacti web interface.
