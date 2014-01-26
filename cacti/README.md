@@ -23,8 +23,9 @@ Cacti script to get your Vera(lite) hooked up to the graphing machines!
 * Script is written for use with **one-minute cacti polling**.  Edit the script and change 60 to 300 for a 5-minute poller.  If you do not do this you will most likely miss door/window contact events.
 
 How to use:
-* Create a new cacti host for each sensor.  Use the IP address of your vera controller for all of them.  Be sure you are selecting the appropriate host template to match the device you're adding.
-* Create graphs for the host.  You will need to know the ID number of the device in order to create graphs for it.  This information is available a variety of ways, but the easiest is probably by pointing your web broswer here:  http://<your.vera.box.ip>:3480/data_request?id=sdata&output_format=xml  use the "id" field, not the "altid" field.
+* Using Host Templates: Create a new cacti host for each sensor.  Use the IP address of your vera controller for all of them.  Be sure you are selecting the appropriate host template to match the device you're adding.
+* Using Graph Templates: Create one host with the IP of your vera controller and add graphs invididually for each device.
+* Creating graphs:  You will need to know the ID number of the device in order to create graphs for it.  This information is available a variety of ways, but the easiest is probably by pointing your web broswer here:  http://<your.vera.box.ip>:3480/data_request?id=sdata&output_format=xml  use the "id" field, not the "altid" field.
 
 
 Copy the script to your cacti/scripts/ directory and make it executable, then import the templates via the cacti web interface.
