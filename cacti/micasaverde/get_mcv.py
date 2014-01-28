@@ -105,6 +105,7 @@ def main():
     4:  { "bt": "batterylevel",     # Sensor
           "tp": "temperature",
           "lt": "light",
+          "hd": "humidity",
           "tr": "tripped",
           "ar": "armed" },
     5:  { "ht": "heating",          # Thermostat
