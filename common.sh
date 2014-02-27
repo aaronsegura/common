@@ -978,3 +978,9 @@ function raid_layout
           rm -f ${TMPFILE}.vdisks
   done
 }
+
+
+function network_states
+{
+  netstat -ant | awk '{print $6}'  | egrep '^[A-Z_]+$' | sort | uniq -c | sort -rn
+}
