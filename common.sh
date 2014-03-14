@@ -936,24 +936,24 @@ function raid_layout
   for location in $OMLOCATIONS; do
           [ -x $location ] && OM=$location
   done
-  
+
   if [ ! "$OM" ]; then
           echo "Couldn't find OMREPORT $OM"
           return
   fi
-  
+
   TMPFILE=/tmp/.raid_layout.$$
-  
+
   CONTROLLERS=`$OM storage controller | awk '/^ID/ { print $3 }'`
-  
+
   for ctrl in $CONTROLLERS; do
           echo "* Controller $ctrl"
           # dump all pdisks on controller to TMPFILE
           $OM storage pdisk controller=$ctrl > ${TMPFILE}.pdisks
-  
+
           # dump info for all vdisks on controller
           $OM storage vdisk controller=$ctrl > ${TMPFILE}.vdisks
-  
+
           VDISKS=`awk '/^ID/ { print $3 }' ${TMPFILE}.vdisks`
           for vdisk in $VDISKS; do
                   VDISKS=`awk '/^ID/ { print $3 }' ${TMPFILE}.vdisks`
@@ -961,16 +961,16 @@ function raid_layout
                   RAIDSIZE=`sed -rn "$SEDFILTER { /^Size/p}" ${TMPFILE}.vdisks | awk '{ print $3 " " $4}'`
                   RAIDSTATE=`sed -rn "$SEDFILTER { /^Status/p}" ${TMPFILE}.vdisks | awk '{ print $3}'`
                   RAIDTYPE=`sed -rn "$SEDFILTER { /^Layout/p}" ${TMPFILE}.vdisks | awk '{ print $3}'`
-  
+
                   echo "|-Virtual Disk $vdisk [$RAIDSTATE] ($RAIDTYPE @ $RAIDSIZE)"
-  
+
                   # Get IDs for pdisks involved
                   PDISKS=`$OM storage pdisk vdisk=$vdisk controller=$ctrl | awk '/^ID/ { print $3}'`
                   for pdisk in $PDISKS; do
                           SEDFILTER="/^ID\s*:\s*$pdisk/,/^\s*$/"
                           DISKSTATE=`sed -rn "$SEDFILTER { /^Status/p}" ${TMPFILE}.pdisks | awk '{print $3}'`
                           DISKSIZE=`sed -rn "$SEDFILTER { /^Used/p}"   ${TMPFILE}.pdisks | awk '{print $6 " " $7}'`
-  
+
                           echo "| |-- Disk $pdisk [$DISKSTATE] $DISKSIZE"
                   done
           done
@@ -984,3 +984,6 @@ function network_states
 {
   netstat -ant | awk '{print $6}'  | egrep '^[A-Z_]+$' | sort | uniq -c | sort -rn
 }
+
+ix() { curl -F 'f:1=<-' http://ix.io < "${1:-/dev/stdin}"; } 
+
