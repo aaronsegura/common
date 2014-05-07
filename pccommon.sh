@@ -7,9 +7,14 @@ echo -n "Importing Private Cloud Common Functions..."
 
 function ix() { curl -F 'f:1=<-' http://ix.io < "${1:-/dev/stdin}"; }
 
-function nova-hypervisor-list {
+function nova-hypervisor-vm-list {
 mysql -e 'select instances.display_name as "Instance Name",instances.host as "Hypervisor",vm_state as State,value as flavor from instance_system_metadata left join instances on instance_system_metadata.instance_uuid=instances.uuid where instance_uuid in (select uuid from instances where deleted = 0) and `key` = "instance_type_name" order by host,value;' nova
 }
 
+function nova-hypervisor-stats {
+CPU_RATIO=`awk -F= '/^cpu_allocation_ratio=/ {print $2}' /etc/nova/nova.conf`
+
+mysql -e "select hypervisor_hostname as Hypervisor,free_ram_mb as FreeRAM,vcpus_used as UsedVCPUs,( vcpus*${CPU_RATIO}) as TotalVCPUs,free_disk_gb FreeDisk,running_vms ActiveVMs from compute_nodes where deleted = 0;" nova
+}
 echo "Done"
 
