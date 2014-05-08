@@ -1,7 +1,8 @@
 #
 # For use by Rackspace Private Cloud team.  May safely be removed.
 #
-#  Report bugs to Aaron Segura x501-5895
+#  Report bugs to Aaron Segura x501-5895.
+#   1RevDrxQqJV3Z16ptEA2YtUH8G61b2qSZ
 #
 
 echo
@@ -22,7 +23,7 @@ echo "  - rpc-hypervisor-free() - Display free resources on each Hypervisor, as 
 function rpc-hypervisor-free {
 CPU_RATIO=`awk -F= '/^cpu_allocation_ratio=/ {print $2}' /etc/nova/nova.conf`
 RAM_RATIO=`awk -F= '/^ram_allocation_ratio=/ {print $2}' /etc/nova/nova.conf`
-mysql -te "select hypervisor_hostname as Hypervisor,(memory_mb*${RAM_RATIO})-memory_mb_used as FreeMem,(vcpus*${CPU_RATIO})-vcpus_used as FreeVCPUs, free_disk_gb FreeDiskGB,running_vms ActiveVMs from compute_nodes where deleted = 0;" nova
+mysql -te "select hypervisor_hostname as Hypervisor,((memory_mb*${RAM_RATIO})-memory_mb_used)/1024 as FreeMemGB,(vcpus*${CPU_RATIO})-vcpus_used as FreeVCPUs, free_disk_gb FreeDiskGB,running_vms ActiveVMs from compute_nodes where deleted = 0;" nova
 }
 
 ################
@@ -92,7 +93,7 @@ function rpc-environment-scan() {
     OS_NETCMD="neutron"
   else
     `which quantum > /dev/null`
-    if [ $? -eq 0]; then
+    if [ $? -eq 0 ]; then
       OS_NETCMD="quantum"
     else
       OS_NETCMD="nova"
