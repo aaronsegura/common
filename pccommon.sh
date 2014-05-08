@@ -4,6 +4,7 @@
 #  Report bugs to Aaron Segura x501-5895
 #
 
+echo
 echo "Importing Private Cloud Common Functions..."
 
 ################
@@ -26,11 +27,6 @@ mysql -te "select hypervisor_hostname as Hypervisor,free_ram_mb as FreeMem,(vcpu
 ################
 echo "  - rpc-filter() - Replace stinky UUIDs with refreshing descriptive names inline"
 function rpc-filter {
-  if [ ${SKIPSCAN=0} -gt 0 ]; then
-    echo "rpc-filter cannot run with SKIPSCAN enabled."
-    return
-  fi
-
   replist=`echo ${tenant_repl}${host_repl}${net_repl}${flav_repl}${img_repl}${user_repl} | tr -d "\n"`
 
   OLDIFS=$IFS
@@ -73,11 +69,11 @@ function rpc-environment-scan() {
   echo "  - Glance"
   img_repl=`nova image-list | awk -F\| '/[0-9]/ {gsub(/[ ]+/, "", $2);gsub(/^ /, "", $3);print "s/"$2"/[["$3" Image]]/g;"}'`
 
-  echo "Done..."
+  echo "Done!"
 }
 ################
 
-echo "Done"
+echo "Done!"
 
 echo
 
