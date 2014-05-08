@@ -14,14 +14,15 @@ function ix() { curl -F 'f:1=<-' http://ix.io < "${1:-/dev/stdin}"; }
 ################
 echo "  - rpc-hypervisor-vms() - Display all hypervisors and associated instances"
 function rpc-hypervisor-vms {
-mysql -te 'select host as "Hypervisor", instances.display_name as "Instance Name",image_ref as "Image", vm_state as State, vcpus as "VCPUs", memory_mb as "RAM", root_gb as "Root", ephemeral_gb as "Ephem" from instance_system_metadata left join instances on instance_system_metadata.instance_uuid=instances.uuid where instance_uuid in (select uuid from instances where deleted = 0) and `key` = "instance_type_name" order by host,display_name' nova
+mysql -te 'select host as "Hypervisor", instances.display_name as "Instance Name",image_ref as "Image", vm_state as State, vcpus as "VCPUs", memory_mb as "RAM", root_gb as "Root", ephemeral_gb as "Ephem" from instance_system_metadata left join instances on instance_system_metadata.instance_uuid=instances.uuid where instance_uuid in (select uuid from instances where deleted = 0) and `key` = "instance_type_name" order by host,display_name' nova 
 }
 
 ################
 echo "  - rpc-hypervisor-free() - Display free resources on each Hypervisor, as reported by MySQL"
 function rpc-hypervisor-free {
 CPU_RATIO=`awk -F= '/^cpu_allocation_ratio=/ {print $2}' /etc/nova/nova.conf`
-mysql -te "select hypervisor_hostname as Hypervisor,free_ram_mb as FreeMem,(vcpus*${CPU_RATIO})-vcpus_used as FreeVCPUs, free_disk_gb FreeDiskGB,running_vms ActiveVMs from compute_nodes where deleted = 0;" nova
+RAM_RATIO=`awk -F= '/^ram_allocation_ratio=/ {print $2}' /etc/nova/nova.conf`
+mysql -te "select hypervisor_hostname as Hypervisor,(memory_mb*${RAM_RATIO})-memory_mb_used as FreeMem,(vcpus*${CPU_RATIO})-vcpus_used as FreeVCPUs, free_disk_gb FreeDiskGB,running_vms ActiveVMs from compute_nodes where deleted = 0;" nova
 }
 
 ################
@@ -39,6 +40,44 @@ function rpc-filter {
   IFS=$OLDIFS
 }
 
+################
+echo "  - rpc-common-errors-scan() - Pretty much what it sounds like"
+function rpc-common-errors-scan() {
+  echo "Checking for common issues..."
+
+  echo -n "  - MySQL Replication: "
+  MYSQL_SLAVE=`mysql -e "show slave status"`
+  if [ "$MYSQL_SLAVE" ]; then
+    mysql -e "show slave status \G" | egrep 'Slave_(IO|SQL)_Running' | wc -l | grep 2 > /dev/null 2>&1
+    [ $? -eq 0 ] && echo -n "Local Slave OK" 
+  else
+    echo "No Replication Configured"
+  fi
+
+  echo "  - OpenVSwitch:"
+  echo -n "  -   Dead Taps: "
+  ovs-vsctl show | egrep "tag: 4096" > /dev/null 2>&1
+  [ $? -eq 0 ] && echo "Dead Taps Detected." || echo "[OK]"
+
+  echo -n "  -   Bridges: "
+  for bridge in `ovs-vsctl list-br | egrep 'eth|bond'`; do 
+    PORTS=`ovs-vsctl list-ports $bridge | wc -l`
+    if [ $PORTS -lt 2 ]; then
+      echo "$bridge [$PORTS ports]"
+    else
+      echo "$bridge [OK] "
+    fi
+  done
+
+
+  echo "  - Operating System:"
+  echo -n "  -   Disk: "
+  df -P -t ext2 -t ext3 -t ext4 -t xfs -t nfs | awk '{print $5}' | tr -d \% | egrep '^[0-9]+$' | egrep '^9' > /dev/null 2>&1
+  [ $? -eq 0 ] && echo "Disk reaching capacity.  Investigate" || echo "[OK]"
+  echo "Done!"
+
+}
+################
 echo "  - rpc-environment-scan() - Update list of internal filters"
 function rpc-environment-scan() {
   echo "Scanning environment.  Please hold..."
@@ -72,12 +111,16 @@ function rpc-environment-scan() {
   echo "Done!"
 }
 ################
-
 echo "Done!"
 
 echo
 
+ip netns | grep '^vips$' > /dev/null 2>&1
+[ $? -eq 0 ] && HA=1
+
 if [ ${SKIPSCAN=0} -eq 0 ]; then
   rpc-environment-scan
+  #echo
+  #rpc-common-errors-scan
 fi
 
