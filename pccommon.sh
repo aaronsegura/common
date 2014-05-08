@@ -1,8 +1,6 @@
 #
-# For use by Rackspace Private Cloud team.  May safely be removed.
+# For use by Private Cloud team.  May safely be removed.
 #
-#  Report bugs to Aaron Segura x501-5895.
-#   1RevDrxQqJV3Z16ptEA2YtUH8G61b2qSZ
 #
 
 echo
