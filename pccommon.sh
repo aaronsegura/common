@@ -74,7 +74,7 @@ function rpc-common-errors-scan() {
 
   echo "  - Operating System:"
   echo -n "  -   Disk: "
-  df -P -t ext2 -t ext3 -t ext4 -t xfs -t nfs | awk '{print $5}' | tr -d \% | egrep '^[0-9]+$' | egrep '^9' > /dev/null 2>&1
+  df -P -t ext2 -t ext3 -t ext4 -t xfs -t nfs | awk '{print $5}' | tr -d \% | egrep '^[0-9]+$' | egrep '^9[0-9]' > /dev/null 2>&1
   [ $? -eq 0 ] && echo "Disk reaching capacity.  Investigate" || echo "[OK]"
   echo "Done!"
 
