@@ -55,17 +55,19 @@ function rpc-common-errors-scan() {
   fi
 
   echo "  - OpenVSwitch:"
+  echo "  -   Missing Taps:"
+  for net in `neutron net-list | awk '/[0-9]/ {print $2}'`; do neutron dhcp-agent-list-hosting-net $net | grep True > /dev/null 2>&1; [ $? -eq 0 ] && echo "        [OK] `echo $net | rpc-filter`"; done  
   echo -n "  -   Dead Taps: "
-  ovs-vsctl show | egrep "tag: 4096" > /dev/null 2>&1
+  ovs-vsctl show | grep -A1 \"tap | egrep "tag: 4095" > /dev/null 2>&1
   [ $? -eq 0 ] && echo "Dead Taps Detected." || echo "[OK]"
 
-  echo -n "  -   Bridges: "
+  echo "  -   Bridges: "
   for bridge in `ovs-vsctl list-br | egrep 'eth|bond'`; do 
     PORTS=`ovs-vsctl list-ports $bridge | wc -l`
     if [ $PORTS -lt 2 ]; then
-      echo "$bridge [$PORTS ports]"
+      echo "         [$PORTS ports] $bridge"
     else
-      echo "$bridge [OK] "
+      echo "         [OK] $bridge"
     fi
   done
 
@@ -82,8 +84,8 @@ echo "  - rpc-environment-scan() - Update list of internal filters"
 function rpc-environment-scan() {
   echo "Scanning environment.  Please hold..."
   echo "  - Keystone"
-  tenant_repl=`keystone tenant-list | awk '/[0-9]/ {print "s/"$2"/[["$4" Tenant]]/g;"}'`
-  user_repl=`keystone user-list | awk '/[0-9]/ {print "s/"$2"/[["$4" User]]/g;"}'`
+  tenant_repl=`keystone tenant-list | awk '/[0-9]/ {print "s/"$2"/[[Tenant: "$4"]]/g;"}'`
+  user_repl=`keystone user-list | awk '/[0-9]/ {print "s/"$2"/[[User: "$4"]]/g;"}'`
 
   `which neutron > /dev/null`
   if [ $? -eq 0 ]; then
@@ -99,14 +101,14 @@ function rpc-environment-scan() {
 
   echo "  - Networking ($OS_NETCMD)"
 
-  net_repl=`nova net-list | awk '/[0-9]/ {print "s/"$2"/[["$4" Network]]/g;"}'`
+  net_repl=`nova net-list | awk '/[0-9]/ {print "s/"$2"/[[Network: "$4"]]/g;"}'`
 
   echo "  - Nova"
-  host_repl=`nova list | awk '/[0-9]/ {print "s/"$2"/[["$4" Instance]]/g;"}'`
-  flav_repl=`nova flavor-list | awk -F\| '/[0-9]/ {print "s/"$3"/[["$8"v,"$4"M,"$5"\/"$6"G,"$7"swap Flavor]]/g;"}' | tr -d " "`
+  host_repl=`nova list | awk '/[0-9]/ {print "s/"$2"/[[Instance: "$4"]]/g;"}'`
+  flav_repl=`nova flavor-list | awk -F\| '/[0-9]/ {print "s/"$3"/[[Flavor: "$8"v,"$4"M,"$5"\/"$6"G,"$7"swap]]/g;"}' | tr -d " "`
 
   echo "  - Glance"
-  img_repl=`nova image-list | awk -F\| '/[0-9]/ {gsub(/[ ]+/, "", $2);gsub(/^ /, "", $3);print "s/"$2"/[["$3" Image]]/g;"}'`
+  img_repl=`nova image-list | awk -F\| '/[0-9]/ {gsub(/[ ]+/, "", $2);gsub(/^ /, "", $3);print "s/"$2"/[[Img: "$3"]]/g;"}'`
 
   echo "Done!"
 }
