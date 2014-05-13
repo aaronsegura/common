@@ -38,6 +38,11 @@ function rpc-filter {
 
   IFS=$OLDIFS
 }
+################
+echo "  - rpc-iscsi-generate-sessions() - Generate list of commands to re-initiate currently open iscsi sessions"
+function rpc-iscsi-generate-sessions() {
+  iscsiadm --mode session | awk '{split($3, a, ":"); print "iscsiadm -m node -T " $4 " -p " a[1] " -l"}'
+}
 
 ################
 echo "  - rpc-common-errors-scan() - Pretty much what it sounds like"
@@ -78,6 +83,26 @@ function rpc-common-errors-scan() {
   echo "Done!"
 
 }
+################
+echo "  - rpc-bondflip() - Change given bondX to backup NIC"
+function rpc-bondflip() {
+  if [ $# -ne 1 ]; then
+    echo "Usage: rpc-bondflip <bond>"
+    return 1
+  fi
+
+  if [ ! -f /proc/net/bonding/$1 ]; then
+    echo "No such bond: $1"
+    return 1
+  fi
+
+  ACTIVESLAVE=`awk '/Active Slave/ { print $4 }' /proc/net/bonding/$1`
+  ifenslave -c $1 $(egrep 'Slave Interface' /proc/net/bonding/$1 | awk '{print $3}' | grep -v $ACTIVESLAVE | head -1)
+  NEWACTIVE=`awk '/Active Slave/ { print $4 }' /proc/net/bonding/$1`
+
+  echo "$1 was active on $ACTIVESLAVE, now $NEWACTIVE"                                                                                                                              
+}
+
 ################
 echo "  - rpc-environment-scan() - Update list of internal filters"
 function rpc-environment-scan() {
