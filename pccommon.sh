@@ -108,8 +108,8 @@ function rpc-bondflip() {
 ################
 echo "  - rpc-port-stats() - Show live interface usage by port"
 function rpc-port-stats() {
-  if [ $# -ne 2 ]; then
-    echo "Usage: rpc-port-stats <port-id> <interval>"
+  if [ $# -ne 1 ]; then
+    echo "Usage: rpc-port-stats <port-id>"
     return
   fi
 
@@ -117,7 +117,7 @@ function rpc-port-stats() {
 
   if [ ! "$( echo $port | egrep '^[0-9a-z]{8}-[0-9a-z]{2}$' )" ]; then
     echo "Inavlid port: $1"
-    echo "Usage: rpc-port-stats <port-id> <interval>"
+    echo "Usage: rpc-port-stats <port-id>"
     return
   fi
 
@@ -125,6 +125,7 @@ function rpc-port-stats() {
 
   echo "Using $1($port)"
 
+  CTR=0
   while [ 1 ]; do
     br_int_port=`ovs-vsctl list-ports br-int | grep $port`
     ovs-ofctl dump-ports br-int $br_int_port > $tmpfile
@@ -139,7 +140,7 @@ function rpc-port-stats() {
     RX_crc=`grep rx $tmpfile | egrep -o "crc=[0-9]+" | cut -d= -f2`
 
     RX_pkts_DELTA=$(( $RX_pkts - ${RX_pkts_OLD=0} ))
-    RX_bytes_DELTA=$(( $RX_bytes - ${RX_bytes_OLD=0} ))
+    RX_bytes_DELTA=`humanize_kb $(( $RX_bytes - ${RX_bytes_OLD=0} ))`
     RX_drop_DELTA=$(( $RX_drop - ${RX_drop_OLD=0} ))
     RX_errs_DELTA=$(( $RX_errs - ${RX_errs_OLD=0} ))
     RX_frame_DELTA=$(( $RX_frame - ${RX_frame_OLD=0} ))
@@ -161,7 +162,7 @@ function rpc-port-stats() {
     TX_coll=`grep tx $tmpfile | egrep -o "coll=[0-9]+" | cut -d= -f2`
 
     TX_pkts_DELTA=$(( $TX_pkts - ${TX_pkts_OLD=0} ))
-    TX_bytes_DELTA=$(( $TX_bytes - ${TX_bytes_OLD=0} ))
+    TX_bytes_DELTA=`humanize_kb $(( $TX_bytes - ${TX_bytes_OLD=0} ))`
     TX_drop_DELTA=$(( $TX_drop - ${TX_drop_OLD=0} ))
     TX_errs_DELTA=$(( $TX_errs - ${TX_errs_OLD=0} ))
     TX_coll_DELTA=$(( $TX_coll - ${TX_coll_OLD=0} ))
@@ -172,12 +173,14 @@ function rpc-port-stats() {
     TX_errs_OLD=$TX_errs
     TX_coll_OLD=$TX_coll
 
-    echo "RXpps: $RX_pkts_DELTA RXBps: $RX_bytes_DELTA TXpps: $TX_pkts_DELTA TXBps: $TX_bytes_DELTA "| column -s\| -t
-    sleep $2
-
+    [ $(( $CTR % 5 )) -eq 0 ] && printf "%12s %12s %12s %12s\n" "RXpps" "RXBps" "TXpps" "TXBps"
+    printf "%12s %12s %12s %12s\n" "$RX_pkts_DELTA" "$RX_bytes_DELTA" "$TX_pkts_DELTA" "$TX_bytes_DELTA "
+    sleep 2
+    CTR=$(( $CTR + 1 ))
   done
 
   rm $tmpfile
+  unset CTR
 }
 
 ################
@@ -218,9 +221,9 @@ function rpc-environment-scan() {
 }
 ################
 # Unlisted helper functions
-function humanize_tb () {
+function humanize_kb () {
 
-  scale=(B K M G T)
+  scale=( K M G)
 
   if [ $# -ne 1 ]; then
     echo "Usage: humanize_kb <value>"
@@ -229,15 +232,15 @@ function humanize_tb () {
 
   val=$1
 
-  if [ $val -lt 1024 ]; then
-    echo "$val ${scale[${power=0}]}"
-    return
-  else
+  while [ $val -gt $(( 1024  * 1024 )) ]; do
     val=$(( $val / 1024 ))
     power=$(( ${power=0} + 1 ))
-  fi
-
+    echo "val=$val pwr=$power"
+  done
+  final=`echo 3 k $val 1024 / p | dc`
+  echo "$final${scale[${power=0}]}"
 }
+
 echo "Done!"
 
 echo
