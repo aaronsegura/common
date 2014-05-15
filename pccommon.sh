@@ -25,6 +25,7 @@ function rpc-hypervisor-free {
 CPU_RATIO=`awk -F= '/^cpu_allocation_ratio=/ {print $2}' /etc/nova/nova.conf`
 RAM_RATIO=`awk -F= '/^ram_allocation_ratio=/ {print $2}' /etc/nova/nova.conf`
 mysql -te "select hypervisor_hostname as Hypervisor,((memory_mb*${RAM_RATIO})-memory_mb_used)/1024 as FreeMemGB,(vcpus*${CPU_RATIO})-vcpus_used as FreeVCPUs, free_disk_gb FreeDiskGB,running_vms ActiveVMs from compute_nodes where deleted = 0;" nova
+unset CPU_RATIO RAM_RATIO
 }
 
 ################
@@ -40,6 +41,8 @@ function rpc-filter {
   done
 
   IFS=$OLDIFS
+
+  unset replist
 }
 ################
 [ ${Q=0} -eq 0 ] && echo "  - rpc-iscsi-generate-sessions() - Generate list of commands to re-initiate currently open iscsi sessions"
@@ -59,6 +62,8 @@ function rpc-common-errors-scan() {
     [ $? -ne 0 ] && echo -n "Local Slave Broken"
     # check remote slave, too - steal from rpchousecall
   fi
+
+  unset MYSQL_SLAVE
 
   echo "  - OpenVSwitch"
   # Networks without dhcp agents
@@ -80,6 +85,7 @@ function rpc-common-errors-scan() {
     fi
   done
 
+  unset PORTS
 
   echo "  - Operating System:"
   echo -n "  -   Disk: "
@@ -106,6 +112,8 @@ function rpc-bondflip() {
   NEWACTIVE=`awk '/Active Slave/ { print $4 }' /proc/net/bonding/$1`
 
   echo "$1 was active on $ACTIVESLAVE, now $NEWACTIVE"
+
+  unset ACTIVESLAVE NEWACTIVE
 }
 
 ################
@@ -183,7 +191,8 @@ function rpc-port-stats() {
   done
 
   rm $tmpfile
-  unset CTR
+  unset CTR tmpfile port br_int_port
+  # Come back some day and clean up all the TX_ RX_ vars :/
 }
 
 ################
@@ -226,7 +235,7 @@ function rpc-environment-scan() {
 # Unlisted helper functions
 function humanize_kb () {
 
-  scale=( K M G T P E Z )
+  scale=( K M G T P E )
 
   if [ $# -ne 1 ]; then
     echo "Usage: humanize_kb <value>"
@@ -236,11 +245,15 @@ function humanize_kb () {
   val=$1
 
   while [ $val -gt $(( 1024  * 1024 )) ]; do
-    val=$(( $val / 1024 ))
+    val=$( echo $val 1024 / p | dc )
     power=$(( ${power=0} + 1 ))
   done
+
   final=`echo 3 k $val 1024 / p | dc`
+
   echo "$final${scale[${power=0}]}"
+
+  unset power final val
 }
 
 [ ${Q=0} -eq 0 ] && echo "Done!"
