@@ -3,21 +3,21 @@
 #
 #
 
-echo
-echo "Importing Private Cloud Common Functions..."
+[ ${Q=0} -eq 0 ] && echo
+[ ${Q=0} -eq 0 ] && echo "Importing Private Cloud Common Functions..."
 
 ################
-echo "  - ix() - Quickly post things to ix.io"
+[ ${Q=0} -eq 0 ] && echo "  - ix() - Quickly post things to ix.io"
 function ix() { curl -F 'f:1=<-' http://ix.io < "${1:-/dev/stdin}"; }
 
 ################
-echo "  - rpc-hypervisor-vms() - Display all hypervisors and associated instances"
+[ ${Q=0} -eq 0 ] && echo "  - rpc-hypervisor-vms() - Display all hypervisors and associated instances"
 function rpc-hypervisor-vms {
 mysql -te 'select host as "Hypervisor", instances.display_name as "Instance Name",image_ref as "Image", vm_state as State, vcpus as "VCPUs", memory_mb as "RAM", root_gb as "Root", ephemeral_gb as "Ephem" from instance_system_metadata left join instances on instance_system_metadata.instance_uuid=instances.uuid where instance_uuid in (select uuid from instances where deleted = 0) and `key` = "instance_type_name" order by host,display_name' nova 
 }
 
 ################
-echo "  - rpc-hypervisor-free() - Display free resources on each Hypervisor, as reported by MySQL"
+[ ${Q=0} -eq 0 ] && echo "  - rpc-hypervisor-free() - Display free resources on each Hypervisor, as reported by MySQL"
 function rpc-hypervisor-free {
 CPU_RATIO=`awk -F= '/^cpu_allocation_ratio=/ {print $2}' /etc/nova/nova.conf`
 RAM_RATIO=`awk -F= '/^ram_allocation_ratio=/ {print $2}' /etc/nova/nova.conf`
@@ -25,7 +25,7 @@ mysql -te "select hypervisor_hostname as Hypervisor,((memory_mb*${RAM_RATIO})-me
 }
 
 ################
-echo "  - rpc-filter() - Replace stinky UUIDs with refreshing descriptive names inline"
+[ ${Q=0} -eq 0 ] && echo "  - rpc-filter() - Replace stinky UUIDs with refreshing descriptive names inline"
 function rpc-filter {
   replist=`echo ${tenant_repl}${host_repl}${net_repl}${flav_repl}${img_repl}${user_repl} | tr -d "\n"`
 
@@ -39,13 +39,13 @@ function rpc-filter {
   IFS=$OLDIFS
 }
 ################
-echo "  - rpc-iscsi-generate-sessions() - Generate list of commands to re-initiate currently open iscsi sessions"
+[ ${Q=0} -eq 0 ] && echo "  - rpc-iscsi-generate-sessions() - Generate list of commands to re-initiate currently open iscsi sessions"
 function rpc-iscsi-generate-sessions() {
   iscsiadm --mode session | awk '{split($3, a, ":"); print "iscsiadm -m node -T " $4 " -p " a[1] " -l"}'
 }
 
 ################
-echo "  - rpc-common-errors-scan() - Pretty much what it sounds like"
+[ ${Q=0} -eq 0 ] && echo "  - rpc-common-errors-scan() - Pretty much what it sounds like"
 function rpc-common-errors-scan() {
   echo "Checking for common issues..."
 
@@ -86,7 +86,7 @@ function rpc-common-errors-scan() {
 
 }
 ################
-echo "  - rpc-bondflip() - Change given bondX to backup NIC"
+[ ${Q=0} -eq 0 ] && echo "  - rpc-bondflip() - Change given bondX to backup NIC"
 function rpc-bondflip() {
   if [ $# -ne 1 ]; then
     echo "Usage: rpc-bondflip <bond>"
@@ -106,7 +106,7 @@ function rpc-bondflip() {
 }
 
 ################
-echo "  - rpc-port-stats() - Show live interface usage by port"
+[ ${Q=0} -eq 0 ] && echo "  - rpc-port-stats() - Show live interface usage by port"
 function rpc-port-stats() {
   if [ $# -ne 1 ]; then
     echo "Usage: rpc-port-stats <port-id>"
@@ -184,7 +184,7 @@ function rpc-port-stats() {
 }
 
 ################
-echo "  - rpc-environment-scan() - Update list of internal filters"
+[ ${Q=0} -eq 0 ] && echo "  - rpc-environment-scan() - Update list of internal filters"
 function rpc-environment-scan() {
   `which keystone` > /dev/null 2>&1
   [ $? -ne 0 ] && echo "Missing local openstack binaries.  Not scanning environment." && return
@@ -241,14 +241,12 @@ function humanize_kb () {
   echo "$final${scale[${power=0}]}"
 }
 
-echo "Done!"
-
-echo
+[ ${Q=0} -eq 0 ] && echo "Done!"
 
 ip netns | grep '^vips$' > /dev/null 2>&1
 [ $? -eq 0 ] && HA=1
 
-if [ ${SKIPSCAN=0} -eq 0 ]; then
+if [ ${S=0} -eq 0 ]; then
   rpc-environment-scan
   #echo
   #rpc-common-errors-scan
