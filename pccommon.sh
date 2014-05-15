@@ -238,7 +238,6 @@ function humanize_kb () {
   while [ $val -gt $(( 1024  * 1024 )) ]; do
     val=$(( $val / 1024 ))
     power=$(( ${power=0} + 1 ))
-    echo "val=$val pwr=$power"
   done
   final=`echo 3 k $val 1024 / p | dc`
   echo "$final${scale[${power=0}]}"
