@@ -3,6 +3,9 @@
 #
 #
 
+# Executing over ssh, don't be so noisy or needy
+[ $TERM == "dumb" ] && S=1 Q=1
+
 [ ${Q=0} -eq 0 ] && echo
 [ ${Q=0} -eq 0 ] && echo "Importing Private Cloud Common Functions..."
 
