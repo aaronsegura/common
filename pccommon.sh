@@ -236,7 +236,7 @@ function rpc-environment-scan() {
 [ ${Q=0} -eq 0 ] && echo "  - rpc-os-version-check() - Are we running latest availble version?"
 function rpc-os-version-check() {
   apt-cache policy nova-common | egrep 'Installed|Candidate' | cut -d: -f3 | sort -ur | wc -l | egrep 1 > /dev/null 2>&1
-  [ $? -eq 0 ] && echo "Running Latest Available Version: " || echo -n "NOT Running Latest Available Version: "
+  [ $? -eq 0 ] && echo -n "Running Latest Available Version: " || echo -n "NOT Running Latest Available Version: "
   apt-cache policy nova-common | egrep 'Installed|Candidate' | cut -d: -f3 | sort -ur | head -1
 }
 
