@@ -226,7 +226,7 @@ function rpc-environment-scan() {
 # Unlisted helper functions
 function humanize_kb () {
 
-  scale=( K M G)
+  scale=( K M G T P E Z )
 
   if [ $# -ne 1 ]; then
     echo "Usage: humanize_kb <value>"
