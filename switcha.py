@@ -78,7 +78,6 @@ class SwitchAPI():
     except SwitchAPIError:
       raise
     else:
-      self.portTxt = r
       ifaces = json.loads(r)
 
       for i in ifaces["items"]:
@@ -105,7 +104,6 @@ class SwitchAPI():
     except SwitchAPIError:
       raise
     else:
-      self.vlanTxt = r
       vlans = json.loads(r)
 
       for v in vlans["items"]:
@@ -139,7 +137,9 @@ class SwitchAPI():
     return r
 
   ###############################################
-  def find(self, iface=None, mac=None):
+  def find(self, iface=None, mac=None, vlan=None):
+    r = []
+
     if iface:
       for key in self.port.keys():
         if self.port[key]["iface"] == iface:
@@ -148,9 +148,17 @@ class SwitchAPI():
     if mac:
       for key in self.port.keys():
         if mac in self.port[key]["mac_addresses"]:
-          return key
+          r.extend([key])
+
+    if vlan:
+      for key in self.port.keys():
+        if str(vlan) in self.port[key]["vlans_allowed"] or vlan == self.port[key]["vlan_id"]:
+          r.extend([key])
+
+    return r
   ###############################################
-  def printPort(self, port):
+  def printPort(self, port, verbose=False):
+
     if self.port[port]["trunk"]:
       try:
         native = self.port[port]["vlans_allowed"].index(self.port[port]["native_vlan"])
@@ -163,12 +171,27 @@ class SwitchAPI():
     else:
       trunkInfo = "Access VLAN %d" % self.port[port]["vlan_id"]
 
-    if len(self.port[port]["mac_addresses"]) == 1:
-      MACInfo = self.port[port]["mac_addresses"][0]
-    else:
-      MACInfo = "None/Multiple"
+    trunkInfo = "[%s]" % trunkInfo
 
-    print("[%d]\t[link:%s] [admin:%s] [%d/%s] [%s] [MAC: %s]" % ( self.port[port]["port"], self.port[port]["link"], self.port[port]["admin"], self.port[port]["speed"], self.port[port]["duplex"], trunkInfo, MACInfo))
+    numAddr = len(self.port[port]["mac_addresses"])
+    if numAddr == 0:
+      MACInfo = "None"
+    else:
+      if verbose:
+        MACInfo = ",".join(self.port[port]["mac_addresses"])
+      else:
+        if numAddr == 1:
+          MACInfo = self.port[port]["mac_addresses"][0]
+        else:
+          MACInfo = "None/Multiple"
+
+    MACInfo = "[%s]" % MACInfo
+
+    print("[%d]\t%s \tlink:%s  \t[%d/%s]\t%s\t%s" % ( self.port[port]["port"], self.port[port]["admin"], self.port[port]["link"], self.port[port]["speed"], self.port[port]["duplex"], trunkInfo, MACInfo))
+    #if verbose:
+      #print("Port [%d]  Speed: %s, Duplex: %s  Linked: %s  Enabled: %s\n%s" % (port, self.port[port]["speed"], self.port[port]["duplex"], self.port[port]["link"], self.port[port]["admin"], trunkInfo))
+      #print("Mac Addresses:\n%s" % MACInfo)
+    #else:
 
   ###############################################
   def log(self, pri, msg):
@@ -183,17 +206,28 @@ def main():
 
   parser.add_argument("-u", dest="userSSO", type=str, default=None, metavar="<Racker SSO>", help="Your RACKSPACE SSO")
   parser.add_argument("-s", dest="userSW", type=str, default=None, metavar="<SwitchName>", help="Switch Name")
-  parser.add_argument("-m", dest="userMAC", type=str, default=None, metavar="<xx-xx-xx-xx-xx-xx>", help="Find MAC Address")
+  parser.add_argument("-p", dest="userPort", type=int, default=None, metavar="<port#>", help="Show port #")
+  parser.add_argument("-m", dest="userMAC", type=str, default=None, metavar="<xx-xx-xx-xx-xx-xx>", help="Show ports with MAC Address")
+  parser.add_argument("-v", dest="userVLAN", type=str, default=None, metavar="<0-4095>", help="Show ports on VLAN")
 
   args = parser.parse_args()
 
   sw = SwitchAPI(user=args.userSSO, switchName=args.userSW, debug=0)
 
   if args.userMAC:
-    port = sw.find(mac=args.userMAC)
-    sw.printPort(port)
-    print("\t[%s]" % ",".join(sw.port[port]["mac_addresses"]))
-  else:
+    ports = sw.find(mac=args.userMAC)
+    for p in ports:
+      sw.printPort(p, verbose=True)
+
+  if args.userVLAN:
+    ports = sw.find(vlan=args.userVLAN)
+    for p in ports:
+      sw.printPort(p)
+
+  if args.userPort:
+    sw.printPort(args.userPort, verbose=True)
+
+  if not args.userVLAN and not args.userMAC and not args.userPort:
     for n in sw.port.keys():
       sw.printPort(n)
 
