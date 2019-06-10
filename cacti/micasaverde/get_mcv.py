@@ -119,9 +119,9 @@ def main():
           "ar": "armed" },
     5:  { "ht": "heating",          # Thermostat
           "cl": "cooling",
-          "hs": "heatsp",
-          "cs": "coolsp",
-          "tp": "temperature"}
+          "hs": "urn:upnp-org:serviceId:TemperatureSetpoint1_Heat_CurrentSetpoint",
+          "cs": "urn:upnp-org:serviceId:TemperatureSetpoint1_Cool_CurrentSetpoint",
+          "tp": "urn:upnp-org:serviceId:TemperatureSensor1_CurrentTemperature"}
   }
 
   pad = ''
