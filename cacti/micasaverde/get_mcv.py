@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import requests, argparse, json, sys, time
+import requests, argparse, json, sys, time, socket
 
 class MCVError(Exception):
   def __init__(self, value):
@@ -66,7 +66,7 @@ class MiCasaVerde():
     try:
       URL = "http://%s:%s/data_request?id=%s&output_format=json" % (self.host, self.port, queryid)
       if addArgs:
-        URL = "%s&%s" (URL, addArgs)
+        URL = "%s&%s" % (URL, addArgs)
       result = requests.get(URL)
     except requests.ConnectionError, err:
       raise MCVError("Could not connect: %s" % err.message)
