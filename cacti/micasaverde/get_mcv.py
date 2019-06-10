@@ -9,11 +9,12 @@ class MCVError(Exception):
     return self.msg
 
 class MiCasaVerde():
-  def __init__(self, host, port, sensorTripTimeout=None):
+  def __init__(self, host, port, dev_id, sensorTripTimeout=None):
     self.status = None
     self.sdata = None
     self.host = host
     self.port = port
+    self.dev_id = dev_id
     self.tripTimeout = sensorTripTimeout
     self.devices = {}
     self.updateStatus()
@@ -33,7 +34,15 @@ class MiCasaVerde():
 
       for key in dev.keys():
         self.devices[devid][key] = dev[key]
-
+        
+      # Load dictionary with values associated to each service-variable.  Including service name since some variables are duplicated
+      devstatus = self.status["Device_Num_%s" % self.dev_id]["states"]
+      for state in devstatus:
+         try:
+           self.devices[devid]["%s_%s" % (state["service"],state["variable"])] = state["value"]
+         except:
+           pass
+          
       # Handle Thermostat Special Variables
       if self.devices[devid]["category"] == 5:
         if self.devices[devid]["hvacstate"] == "Heating":
@@ -94,7 +103,7 @@ def main():
   args = parseArgs()
 
   try:
-    MCV = MiCasaVerde(args.host, args.port, sensorTripTimeout=args.freq)
+    MCV = MiCasaVerde(args.host, args.port, args.id, sensorTripTimeout=args.freq)
   except MCVError, err:
     print "%s" % err.msg
     return
