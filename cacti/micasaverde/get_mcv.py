@@ -12,7 +12,6 @@ class MiCasaVerde():
   def __init__(self, host, port, dev_id, sensorTripTimeout=None):
     self.status = None
     self.sdata = None
-    self.hasChildren = False
     self.childrenData = {}
     self.host = host
     self.port = port
@@ -29,13 +28,9 @@ class MiCasaVerde():
       raise
     except (ValueError, TypeError), err:
       raise MCVError(" %s" % err.message)
-#    print "status %s" % self.status
     for dev in self.sdata["devices"]:
       devid = dev.pop("id")
       self.devices[devid] = {}
-
-      if "parent" in dev and dev["parent"] == self.dev_id:
-        self.hasChildren = True
 
       for key in dev.keys():
         self.devices[devid][key] = dev[key]
@@ -46,7 +41,6 @@ class MiCasaVerde():
         if devid != 1 and key not in words_to_skip and "parent" in dev and dev["parent"] == self.dev_id:
           self.childrenData[key] = dev[key]
         
-
       # Load dictionary with values associated to each service-variable.  Including service name since some variables are duplicated
       devstatus = self.status["Device_Num_%s" % self.dev_id]["states"]
       for state in devstatus:
