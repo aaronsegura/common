@@ -12,6 +12,8 @@ class MiCasaVerde():
   def __init__(self, host, port, dev_id, sensorTripTimeout=None):
     self.status = None
     self.sdata = None
+    self.hasChildren = False
+    self.childrenData = {}
     self.host = host
     self.port = port
     self.dev_id = dev_id
@@ -21,20 +23,30 @@ class MiCasaVerde():
 
   def updateStatus(self):
     try:
-      self.status = json.loads(self.query("status").content)
+      self.status = json.loads(self.query("status","DeviceNum=%s" % self.dev_id).content)
       self.sdata  = json.loads(self.query("sdata").content)
     except MCVError:
       raise
     except (ValueError, TypeError), err:
       raise MCVError(" %s" % err.message)
-
+#    print "status %s" % self.status
     for dev in self.sdata["devices"]:
       devid = dev.pop("id")
       self.devices[devid] = {}
 
+      if "parent" in dev and dev["parent"] == self.dev_id:
+        self.hasChildren = True
+
       for key in dev.keys():
         self.devices[devid][key] = dev[key]
+
+        # Also set/enrich parent node with additional attributes like humidity and temperature, for Aeotec ZW100 6-in-1 sensor 
+        # Hopefully this does not break anything
+        words_to_skip = ["id","altid","name","category","parent","subcategory","room"]
+        if devid != 1 and key not in words_to_skip and "parent" in dev and dev["parent"] == self.dev_id:
+          self.childrenData[key] = dev[key]
         
+
       # Load dictionary with values associated to each service-variable.  Including service name since some variables are duplicated
       devstatus = self.status["Device_Num_%s" % self.dev_id]["states"]
       for state in devstatus:
@@ -42,7 +54,7 @@ class MiCasaVerde():
            self.devices[devid]["%s_%s" % (state["service"],state["variable"])] = state["value"]
          except:
            pass
-          
+
       # Handle Thermostat Special Variables
       if self.devices[devid]["category"] == 5:
         if self.devices[devid]["hvacstate"] == "Heating":
@@ -67,6 +79,9 @@ class MiCasaVerde():
               self.devices[devid]["tripped"] = 1
           except (KeyError, ValueError):
             pass
+
+    # Add enriched parent data for Aeotec ZW100
+    self.devices[self.dev_id].update(self.childrenData)
 
     return
 
@@ -110,15 +125,17 @@ def main():
 
   valueMap = {
     2:  { "lv": "level"   },        # Dimmable Light
-    3:  { "st": "status"  },        # Switch
+    3:  { "st": "status",           # Switch
+          "kw": "kwh",
+          "wt": "watts" },
     4:  { "bt": "batterylevel",     # Sensor
           "tp": "temperature",
           "lt": "light",
           "hd": "humidity",
           "tr": "tripped",
           "ar": "armed" },
-    5:  { "ht": "heating",          # Thermostat
-          "cl": "cooling",
+    5:  { "ht": "heat",          # Thermostat
+          "cl": "cool",
           "hs": "urn:upnp-org:serviceId:TemperatureSetpoint1_Heat_CurrentSetpoint",
           "cs": "urn:upnp-org:serviceId:TemperatureSetpoint1_Cool_CurrentSetpoint",
           "tp": "urn:upnp-org:serviceId:TemperatureSensor1_CurrentTemperature"}
