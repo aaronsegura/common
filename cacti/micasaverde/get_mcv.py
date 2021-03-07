@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import requests, argparse, json, sys, time
+import requests, argparse, json, sys, time, socket
 
 class MCVError(Exception):
   def __init__(self, value):
@@ -9,30 +9,45 @@ class MCVError(Exception):
     return self.msg
 
 class MiCasaVerde():
-  def __init__(self, host, port, sensorTripTimeout=None):
+  def __init__(self, host, port, dev_id, sensorTripTimeout=None):
     self.status = None
     self.sdata = None
+    self.childrenData = {}
     self.host = host
     self.port = port
+    self.dev_id = dev_id
     self.tripTimeout = sensorTripTimeout
     self.devices = {}
     self.updateStatus()
 
   def updateStatus(self):
     try:
-      self.status = json.loads(self.query("status").content)
+      self.status = json.loads(self.query("status","DeviceNum=%s" % self.dev_id).content)
       self.sdata  = json.loads(self.query("sdata").content)
     except MCVError:
       raise
     except (ValueError, TypeError), err:
       raise MCVError(" %s" % err.message)
-
     for dev in self.sdata["devices"]:
       devid = dev.pop("id")
       self.devices[devid] = {}
 
       for key in dev.keys():
         self.devices[devid][key] = dev[key]
+
+        # Also set/enrich parent node with additional attributes like humidity and temperature, for Aeotec ZW100 6-in-1 sensor 
+        # Hopefully this does not break anything
+        words_to_skip = ["id","altid","name","category","parent","subcategory","room"]
+        if devid != 1 and key not in words_to_skip and "parent" in dev and dev["parent"] == self.dev_id:
+          self.childrenData[key] = dev[key]
+        
+      # Load dictionary with values associated to each service-variable.  Including service name since some variables are duplicated
+      devstatus = self.status["Device_Num_%s" % self.dev_id]["states"]
+      for state in devstatus:
+         try:
+           self.devices[devid]["%s_%s" % (state["service"],state["variable"])] = state["value"]
+         except:
+           pass
 
       # Handle Thermostat Special Variables
       if self.devices[devid]["category"] == 5:
@@ -59,6 +74,9 @@ class MiCasaVerde():
           except (KeyError, ValueError):
             pass
 
+    # Add enriched parent data for Aeotec ZW100
+    self.devices[self.dev_id].update(self.childrenData)
+
     return
 
   def query(self, queryid, addArgs=None):
@@ -66,7 +84,7 @@ class MiCasaVerde():
     try:
       URL = "http://%s:%s/data_request?id=%s&output_format=json" % (self.host, self.port, queryid)
       if addArgs:
-        URL = "%s&%s" (URL, addArgs)
+        URL = "%s&%s" % (URL, addArgs)
       result = requests.get(URL)
     except requests.ConnectionError, err:
       raise MCVError("Could not connect: %s" % err.message)
@@ -94,25 +112,27 @@ def main():
   args = parseArgs()
 
   try:
-    MCV = MiCasaVerde(args.host, args.port, sensorTripTimeout=args.freq)
+    MCV = MiCasaVerde(args.host, args.port, args.id, sensorTripTimeout=args.freq)
   except MCVError, err:
     print "%s" % err.msg
     return
 
   valueMap = {
     2:  { "lv": "level"   },        # Dimmable Light
-    3:  { "st": "status"  },        # Switch
+    3:  { "st": "status",           # Switch
+          "kw": "kwh",
+          "wt": "watts" },
     4:  { "bt": "batterylevel",     # Sensor
           "tp": "temperature",
           "lt": "light",
           "hd": "humidity",
           "tr": "tripped",
           "ar": "armed" },
-    5:  { "ht": "heating",          # Thermostat
-          "cl": "cooling",
-          "hs": "heatsp",
-          "cs": "coolsp",
-          "tp": "temperature"}
+    5:  { "ht": "heat",          # Thermostat
+          "cl": "cool",
+          "hs": "urn:upnp-org:serviceId:TemperatureSetpoint1_Heat_CurrentSetpoint",
+          "cs": "urn:upnp-org:serviceId:TemperatureSetpoint1_Cool_CurrentSetpoint",
+          "tp": "urn:upnp-org:serviceId:TemperatureSensor1_CurrentTemperature"}
   }
 
   pad = ''
